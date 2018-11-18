@@ -1,0 +1,61 @@
+<?php //子テーマ用関数
+
+//親skins の取得有無の設定
+function include_parent_skins(){
+  return true; //親skinsを含める場合はtrue、含めない場合はfalse
+}
+
+//子テーマ用のビジュアルエディタースタイルを適用
+add_editor_style();
+
+//以下にSimplicity子テーマ用の関数を書く
+function add_recaptcha_comment($fields) {
+    $fields['recaptcha'] = '<div class="g-recaptcha" data-sitekey="6Lf5UlkUAAAAACWO6LiGcnZLpCqeiUeAMyB_sNs6"></div>';
+    return $fields;
+}
+add_filter('comment_form_default_fields','add_recaptcha_comment');
+function verify_captcha( $parameter = true ) {
+    if ( isset( $_POST['g-recaptcha-response'] ) ) {
+        $response = json_decode( wp_remote_retrieve_body( wp_remote_get( "https://www.google.com/recaptcha/api/siteverify?secret=6Lf5UlkUAAAAAM3hTm_fv8Ko_ZNJwJp6Cwarp9Uf&response=" .$_POST['g-recaptcha-response'] ) ), true );
+        if( $response["success"] ) {
+            return $parameter;
+        } elseif ( !$response["success"] ) {
+            wp_die( '<h1>認証に失敗しました</h1><p>「私はロボットではありません」にチェックを入れてください。</p>', '', array( 'back_link' => true ) );
+        }
+    } elseif ( !isset( $_POST['g-recaptcha-response'] ) && !is_user_logged_in() ) {
+        wp_die( '<h1>ロボットと判定されました</h1><p>あなたがロボットでなければ、ブラウザの javascript を有効にしてください。</p>', '', array( 'response' => 403, 'back_link' => true ) );
+    }
+}
+add_action( 'pre_comment_on_post', 'verify_captcha' );
+function enqueue_recaptcha_scripts() {
+    wp_enqueue_script( 'recaptcha', 'https://www.google.com/recaptcha/api.js' );
+}
+add_action('login_enqueue_scripts', 'enqueue_recaptcha_scripts');
+function display_recaptcha() {
+    echo '<div class="g-recaptcha" data-sitekey="6Lf5UlkUAAAAACWO6LiGcnZLpCqeiUeAMyB_sNs6"></div>';
+}
+add_action( 'login_form', 'display_recaptcha' );
+function login_verify_captcha( $parameter = true ) {
+    if ( isset( $_POST['g-recaptcha-response'] ) ) {
+        $response = json_decode( wp_remote_retrieve_body( wp_remote_get( "https://www.google.com/recaptcha/api/siteverify?secret=6Lf5UlkUAAAAAM3hTm_fv8Ko_ZNJwJp6Cwarp9Uf&response=" .$_POST['g-recaptcha-response'] ) ), true );
+        if( $response["success"] ) {
+            return $parameter;
+        } elseif ( !$response["success"] ) {
+            wp_die( '<h1>認証に失敗しました</h1><p>「私はロボットではありません」にチェックを入れてください。</p>', '', array( 'back_link' => true ) );
+        }
+    }
+    return false;
+}
+add_action( 'wp_authenticate', 'login_verify_captcha' );
+add_filter( 'wpap_shortcode_preview', '__return_false' );
+add_filter( 'wpap_service_link_label', function ($label) {
+$label = array(
+'amazon' => 'Amazonで購入する',
+'rakuten-ichiba' => '楽天市場で探す',
+'rakuten-books' => '楽天ブックスで購入する',
+'yahoo' => 'Yahoo!ショッピングで探す'
+);
+return $label;
+} );
+PHP
+}
